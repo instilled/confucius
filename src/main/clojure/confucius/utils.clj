@@ -29,7 +29,9 @@
 
 (defn deep-merge
   "Recursively merges maps. If keys are not maps,
-  the last value wins."
+  the last value wins.
+
+  Shamelessly copied from: https://groups.google.com/forum/#!topic/clojure/UdFLYjLvNRs"
   [& vals]
   (if (every? map? vals)
     (apply merge-with deep-merge vals)

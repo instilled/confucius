@@ -60,7 +60,7 @@
       (IllegalStateException.
         (format "Not a valid url. Context:" ctx)))))
 
-(defn unprefix
+(defn ^:private unprefix
   "Unprefix `prefix` from `value`. Return `nil` if
   `value` did not start with `prefix`."
   [^String value prefix]
@@ -137,8 +137,65 @@
       m)))
 
 (defn load-config
-  "Recursively load a configuration from url. Merge
-  from left to right."
+  "Load configuration data from `urls`. Does deep-merging
+  of the data from left to right to form the final configuration
+  map. Reads`*.yml|yaml` or `*.json` encoded content.
+
+  `load-config` has support for:
+  * variable expansion and deault values `${my-var:default}`
+  * referencing other configuration `@:`
+  * reference files on the classpath `cp://...`
+  * relative file urls for `file://...`
+
+
+  A note on syntax and behaviour
+
+  Variable substition reads values either from other config
+  values, java properties, or the native environment, or finally,
+  the default value. If no default value is given and the
+  referenced variable does not exist an IllegalStateException
+  is thrown. To reference a path in the confguration the variable
+  is split at `.` and each segment keywordizeg, e.g. `${a.b.c}`
+  will result in `(get-in cfg [:a :b :c])`.
+
+  Referencing configuration files is done by prefixing a
+  value with `@:`, e.g. \"@:cp://abc\".  The configuration
+  value will then be replaced with the configuration loaded
+  from the reference.
+
+  Relative file urls will be made absolute by calling creating
+  a file and replacing it's absolute path in the `file://` url.
+
+
+  Example
+
+  Given three configuration files:
+
+  ```
+  # file on classpath: happy-service.yml
+  http-port: 8080
+
+  # file on fs (where java is invoked): crary-service.yml
+  http-port: 8081
+
+  # file on fs (where java is invoked): config.yml
+  base-path: \"file://${expanded-from-env:target}\"
+
+  happy-service: \"@:cp://happy-service.yml\"
+  crazy-service: \"@:file://crazy-service.yml\"
+  ```
+
+  Loading `config.yml` will result in the following map:
+
+  ```
+  {:base-path \" #object[java.io.File xxx \"target\"
+   :happy-service {:http-port 8080}
+   :crazy-service {:http-port 8081}}
+  ```
+
+  where `${expanded-from-env}` will be expanded
+  from the environment or it's default value taken (`target`
+  in that case)."
   [& urls]
   (->> urls
        (transduce
@@ -149,3 +206,35 @@
          conj
          [])
        (apply deep-merge)))
+
+(defprotocol ToUrl
+  (toUrl
+    [this]))
+
+(extend-type
+  java.io.File
+
+  ToUrl
+  (toUrl
+    [this]
+    (.toURL this)))
+
+(extend-type
+  java.lang.String
+
+  ToUrl
+  (toUrl
+    [this]
+    (if (.matches this ".+:\\/\\/.+")
+      (java.net.URL. this)
+      (toUrl (io/file this)))))
+
+(defn ->url
+  "Convenience function to build urls. Currently supports string
+  and file coercion.
+
+  If `v` is a string and is an url pattern, e.g `file:///abc`,
+  uses `(java.net.URL. v)` otherwise `(.toURL (java.io.File. v))`."
+  [v]
+  (toUrl v))
+

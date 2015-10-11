@@ -11,7 +11,7 @@
       ":"
       2)))
 
-(defn ^:private get-vars
+(defn ^:private extract-vars
   [s]
   (re-seq #"\$\{.*\}" s))
 
@@ -37,16 +37,18 @@
               (->envn env)
               (->envn env)
               default
-              (throw (IllegalStateException. (str "Failed to find in environment and no default value provided: " env))))]
-      (if (get-vars v) (envify ctx v) v))))
+              (throw
+                (IllegalStateException.
+                  (str "Reference not found in environment and no default provided! Var: " env))))]
+      (if (extract-vars v) (envify ctx v) v))))
 
 (defn envify
-  "Replaces any occurrences of `${var.name:default}` with the value
+  "Replace any occurrences of `${var.name:default}` with the value
   referenced by `var.name`. First tries to find the value
   in `ctx`, then java properties and finally in the native
   environment.
 
-  For navtive environment var matching replaces `.` with
+  For native environment var matching replaces `.` with
   `_` and uppercases the string, e.g. `var.name` -> `VAR_NAME`."
   [ctx s]
   (reduce
@@ -54,7 +56,6 @@
       (let [v (apply from-env ctx (parse-var r))]
         (if v
           (.replace s r v)
-          ;; TODO: better to throw if not found?
           s)))
     s
-    (get-vars s)))
+    (extract-vars s)))

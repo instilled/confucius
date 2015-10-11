@@ -35,7 +35,7 @@
              "${abc:defaulted}")))
     (is (thrown-with-msg?
           IllegalStateException
-          #"Failed to find in environment.*"
+          #"Reference not found.*"
           (envify
             {}
             "${abc}")))))
