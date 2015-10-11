@@ -16,14 +16,16 @@ TBD
 
 Example usage:
 
-    (ns my.amazing.ns
-     (:require
-      [confucius.core :as c]))
+```clojure
+(ns my.amazing.ns
+ (:require
+  [confucius.core :as c]))
 
-    (c/load-config
-      (clojure.java.io/resource "config-default.yml")
-      (c/->url "platform.yml")
-      (c/->url "host.json"))
+(c/load-config
+  (clojure.java.io/resource "config-default.yml")
+  (c/->url "platform.yml")
+  (c/->url "host.json"))
+```
 
 `load-config` loads the configuration files from
 any url and finally deep merges the results into a
