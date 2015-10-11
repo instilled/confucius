@@ -1,0 +1,55 @@
+# Folders
+/bin/
+/data/
+/dev-resources/
+/dist/
+/deploy/
+/logs/
+/target/
+TAGS
+
+# Files
+h2*
+*.zip
+*.tar.gz
+*~
+
+# Ignores for vim
+*.sw*
+
+# Ignores for EA
+*.log
+*.ldb
+
+# Ignores for git
+*.orig
+*.patch
+
+# Ignores for lein/mvn
+.nrepl-*
+.lein-*
+pom.xml
+
+# Ignores for eclipse
+.project
+.settings
+.classpath
+
+# Ignores for IntelliJ
+*.iml
+.iml/
+.idea/
+
+# Ignores for Eclipse
+.settings/
+
+# Ignores for OS X
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Ignores for Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
