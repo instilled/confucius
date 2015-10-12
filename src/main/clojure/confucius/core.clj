@@ -137,34 +137,43 @@
       m)))
 
 (defn load-config
-  "Load configuration data from `urls`. Does deep-merging
+  "Load configuration data from `urls-and-opts`. Does deep-merging
   of the data from left to right to form the final configuration
   map. Reads`*.yml|yaml` or `*.json` encoded content.
+  The last value in `urls-and-opts` may be a map with further
+  options:
+
+  :transform-fn    One arity fn taking the configuration to
+  be transformed. Must return the modified
+  configuration.
 
   `load-config` has support for:
   * variable expansion and deault values `${my-var:default}`
-  * referencing other configuration `@:`
-  * reference files on the classpath `cp://...`
+  * referencing other configuration with `@:`
+  * referencing files on the classpath with `cp://...`
   * relative file urls for `file://...`
 
 
   A note on syntax and behaviour
 
-  Variable substition reads values either from other config
-  values, java properties, or the native environment, or finally,
-  the default value. If no default value is given and the
-  referenced variable does not exist an IllegalStateException
-  is thrown. To reference a path in the confguration the variable
-  is split at `.` and each segment keywordizeg, e.g. `${a.b.c}`
-  will result in `(get-in cfg [:a :b :c])`.
+  Variable will be expanded to values either from other config
+  values, java properties, or the native environment. If it could
+  not be expanded its default value is taken. In case no default
+  value was given an IllegalStateException is thrown.
+  To reference a path in the confguration the variable
+  is split at `.` and each segment keywordized, e.g. `${a.b.c}`
+  will result in `(get-in cfg [:a :b :c])`. For native env
+  lookups `.` is replaced with underscore and the final string
+  uppercased.
 
-  Referencing configuration files is done by prefixing a
-  value with `@:`, e.g. \"@:cp://abc\".  The configuration
-  value will then be replaced with the configuration loaded
-  from the reference.
+  Referencing configuration includes the target at point, i.e.
+  the file content will be inserted under the given key.
+  Referencing is done by prefixing a value with `@:`,
+  e.g. \"@:cp://abc\".
 
-  Relative file urls will be made absolute by calling creating
-  a file and replacing it's absolute path in the `file://` url.
+  Relative file urls will be made absolute by creating a file
+  and replacing its absolute path in the url, e.g.
+  `file://rel/path` -> `file:///tmp/rel/path`.
 
 
   Example
@@ -188,14 +197,12 @@
   Loading `config.yml` will result in the following map:
 
   ```
-  {:base-path \" #object[java.io.File xxx \"target\"
+  {:base-path \"file:///projects/confucius/target\"
    :happy-service {:http-port 8080}
    :crazy-service {:http-port 8081}}
   ```
 
   where `${expanded-from-env}` will be expanded
-  from the environment or it's default value taken (`target`
-  in that case)."
   [& urls]
   (->> urls
        (transduce
