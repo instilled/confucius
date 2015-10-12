@@ -66,7 +66,6 @@
   []
   (comp
     (dev)
-    (watch)
     (speak)
     (test)))
 
