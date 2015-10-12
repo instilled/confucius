@@ -22,9 +22,10 @@ Example usage:
   [confucius.core :as c]))
 
 (c/load-config
-  (clojure.java.io/resource "config-default.yml")
-  (c/->url "platform.yml")
-  (c/->url "host.json"))
+ (clojure.java.io/resource "config-default.yml")
+ (c/->url "platform.yml")
+ (c/->url "host.json")
+ {:transform identity})
 ```
 
 `load-config` loads the configuration files from
