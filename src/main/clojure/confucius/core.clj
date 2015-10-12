@@ -203,16 +203,24 @@
   ```
 
   where `${expanded-from-env}` will be expanded
-  [& urls]
-  (->> urls
-       (transduce
-         (comp
-           (map from-url)
-           (map expand-env)
-           (map process-map))
-         conj
-         [])
-       (apply deep-merge)))
+  from the environment or its default value taken if
+  the value was not found."
+  [& urls-and-opts]
+  (let [[urls opts] (if (map? (last urls-and-opts))
+                      [(butlast urls-and-opts)
+                       (last urls-and-opts)]
+                      [urls-and-opts])
+        opts (merge {:transform-fn identity} opts)]
+    (->> urls
+         (transduce
+           (comp
+             (map from-url)
+             (map expand-env)
+             (map process-map)
+             (map (:transform-fn opts)))
+           conj
+           [])
+         (apply deep-merge))))
 
 (defprotocol ToUrl
   (toUrl
@@ -244,4 +252,3 @@
   uses `(java.net.URL. v)` otherwise `(.toURL (java.io.File. v))`."
   [v]
   (toUrl v))
-
