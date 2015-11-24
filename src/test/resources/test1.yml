@@ -1,3 +1,3 @@
 abc:
-  on-classpath: "@:cp://test2.yml"
-  on-fs-rel: "@:file://src/test/resources/test2.yml"
+  on-classpath:  "@:cp://test2.yml"
+  on-fs-rel:     "@:file://src/test/resources/test2.yml"

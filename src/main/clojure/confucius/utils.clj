@@ -28,7 +28,7 @@
     (postwalkx (fn [x] (if (instance? java.util.Map x) (into {} (map f x)) x)) m)))
 
 (defn deep-merge
-  "Recursively merges maps. If keys are not maps,
+  "Recursively merges maps. If vals are not maps,
   the last value wins.
 
   Shamelessly copied from: https://groups.google.com/forum/#!topic/clojure/UdFLYjLvNRs"
@@ -36,3 +36,11 @@
   (if (every? map? vals)
     (apply merge-with deep-merge vals)
     (last vals)))
+
+(defn unprefix
+  "Unprefix `prefix` from `value`. Return `nil` if
+  `value` does not match `prefix`."
+  [^String value prefix]
+  (when (and (string? value)
+             (.startsWith value prefix))
+    (.substring value (count prefix))))

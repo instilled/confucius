@@ -1,6 +1,7 @@
 (ns confucius.env)
 
 (defn ^:private parse-var
+  "Extract var from `s`."
   [s]
   (into
     []
@@ -18,6 +19,7 @@
 (declare envify)
 
 (defn ^:private from-env
+  "Recursively expand `env`."
   [ctx env & [default]]
   (letfn [(->ctx  [^String s]
             (when-let [p (seq (map keyword (.split s "\\.")))]
@@ -43,13 +45,14 @@
       (if (extract-vars v) (envify ctx v) v))))
 
 (defn envify
-  "Replace any occurrences of `${var.name:default}` with the value
-  referenced by `var.name`. First tries to find the value
+  "Replace any occurrence of `${var.name:default}` with the value
+  referenced by `var.name`. First try to find the value
   in `ctx`, then java properties and finally in the native
-  environment.
+  environment. For `ctx` matching interprets `var.name` as
+  a path in a map, i.e. `{:var {:name xyz}}`.
 
-  For native environment var matching replaces `.` with
-  `_` and uppercases the string, e.g. `var.name` -> `VAR_NAME`."
+  For native environment replace `.` with `_` and uppercase
+  the string, e.g. `var.name` -> `VAR_NAME`."
   [ctx s]
   (reduce
     (fn [s r]

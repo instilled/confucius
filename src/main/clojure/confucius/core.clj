@@ -1,105 +1,49 @@
 (ns confucius.core
   (:require
+    [confucius.proto   :as    p]
+    [confucius.ext]
     [confucius.env     :refer [envify]]
-    [confucius.utils   :refer [keywordize-keys deep-merge]]
+    [confucius.utils   :refer [deep-merge unprefix]]
     [clojure.walk      :refer [walk postwalk]]
-    [clojure.data.json :as    json]
-    [clojure.java.io   :as    io])
-  (:import
-    [org.yaml.snakeyaml
-     Yaml]))
-
-(defn ^:private ext
-  "Get file extension of `f`, i.e. text after the last `.` in `f`, or nil."
-  [f]
-  (if-let [f (str f)]
-    (let [i (.lastIndexOf f ".")]
-      (if (< 0 i)
-        (.substring f i)))))
-
-(defmulti from-url
-  "Load data from url. Dispatches on the extension
-  of url."
-  (fn [url] (or (ext url) :default)))
-
-(defmethod from-url :default
-  [url]
-  (throw
-    (IllegalStateException.
-      (format "Don't know how to load configuration from %s"
-              url))))
-
-(defmethod from-url ".yml"
-  [url] "abc")
-
-(letfn [(load-yaml
-          [url]
-          (let [y (Yaml.)]
-            (with-open [s (.openStream url)]
-              ;; convert to clojure persistent
-              ;; datatructs
-              (keywordize-keys (.load y s)))))]
-  (defmethod from-url ".yaml"
-    [url] (load-yaml url))
-
-  (defmethod from-url ".yml"
-    [url] (load-yaml url)))
-
-;; JSON
-(defmethod from-url ".json"
-  [url]
-  (with-open [s (.openStream url)
-              r (io/reader s)]
-    (json/read r :key-fn keyword)))
-
-(defn ^:private url-or-throw
-  [ctx url]
-  (if (instance? java.net.URL url)
-    url
-    (throw
-      (IllegalStateException.
-        (format "Not a valid url. Context:" ctx)))))
-
-(defn ^:private unprefix
-  "Unprefix `prefix` from `value`. Return `nil` if
-  `value` did not start with `prefix`."
-  [^String value prefix]
-  (when (and (string? value)
-             (.startsWith value prefix))
-    (.substring value (count prefix))))
-
-(defn ^:private cp-ref
-  [value]
-  (when-let [value (unprefix value "cp://")]
-    (if-let [url (io/resource value)]
-      url
-      (throw
-        (IllegalStateException.
-          (str "Resource not found: " value))))))
-
-(defn ^:private file-ref
-  "Convert file ref to url. Knows how to handle
-  relative file:// urls, i.e. file://abc.yml will
-  be taken relative to the current working dir."
-  [value]
-  (when-let [path (io/file (unprefix value "file://"))]
-    (if-let [url (and (.isFile path) (-> path (.toURI) (.toURL)))]
-      url
-      (throw
-        (IllegalStateException.
-          (str "File not found: " value))))))
+    [clojure.java.io   :as    io]))
 
 (declare load-config)
 
-(defn ^:private include
-  "Extract path from ref value."
-  [value]
-  (when-let [value (unprefix value "@:")]
-    (-> value
-        (url-or-throw
-          (or (cp-ref value)
-              (file-ref value)))
-        (load-config))))
+(def classpath-value-reader
+  "Classpath value reader."
+  (reify p/ValueReader
+    (process
+      [this value]
+      (when-let [value (unprefix value "cp://")]
+        (if-let [url (io/resource value)]
+          url
+          (throw
+            (IllegalStateException.
+              (str "Resource not found: " value))))))))
+
+(def fileref-value-reader
+  "File ref value reader."
+  (reify p/ValueReader
+    (process
+      [this value]
+      (when-let [path (io/file (unprefix value "file://"))]
+        (if-let [url (and (.isFile path) (-> path (.toURI) (.toURL)))]
+          url
+          (throw
+            (IllegalStateException.
+              (str "File not found: " value))))))))
+
+(def include-value-reader
+  "Includes either file or classpath refs."
+  (reify p/ValueReader
+    (process
+      [this value]
+      (when-let [value (unprefix value "@:")]
+        (let [url (or (p/process classpath-value-reader value)
+                      (p/process fileref-value-reader value))]
+          (assert (instance? java.net.URL url)
+                  (str "Not a valid url: " url))
+          (load-config url))))))
 
 (defn ^:private expand-env
   ([v]
@@ -119,45 +63,63 @@
      v)))
 
 (defn ^:private process-map
-  [m]
-  (letfn [(dive
-            [v]
-            (when (map? v)
-              (process-map v)))]
+  [{:keys [value-readers] :as opts} m]
+  (letfn [(first-wins
+            [value-readers v]
+            (loop [value-readers value-readers]
+              (when-let [rdr  (first value-readers)]
+                (or (.process rdr v)
+                    (recur (next value-readers))))))]
     (reduce
       (fn [acc [k v]]
         (assoc
           acc k
-          (or (include v)
-              (cp-ref v)
-              (file-ref v)
-              (dive v)
+          (or (first-wins value-readers v)
+              (and (map? v) (process-map opts v))
               v)))
       {}
       m)))
 
+(def ^:dynamic *default-value-readers*
+  "Default value readers."
+  [include-value-reader
+   classpath-value-reader
+   fileref-value-reader])
+
+(defn ->url
+  "Convenience function to build urls. By default supports string
+  and file coercion. Protocol `confucius.proto/ToUrl` may be
+  extended to add more support."
+  [v]
+  (p/toUrl v))
+
 (defn load-config
-  "Load configuration data from `urls-and-opts`. Does deep-merging
+  "Load configuration data from `opts-and-urls`. Does deep-merging
   of the data from left to right to form the final configuration
   map. Reads`*.yml|yaml` or `*.json` encoded content.
-  The last value in `urls-and-opts` may be a map with further
+  The first value in `opts-and-urls` may be a map with further
   options:
 
-  :transform-fn    One arity fn taking the configuration to
-  be transformed. Must return the modified
-  configuration.
+  :transform-fn   One arity fn taking the configuration to
+                  be transformed. Must return the modified
+                  configuration.
+  :value-readers  By default uses `include-value-reader`,
+                  `classpath-value-reader` and
+                  `fileref-value-reader`. See
+                  `*default-value-readers*`.
 
   `load-config` has support for:
-  * variable expansion and deault values `${my-var:default}`
-  * referencing other configuration with `@:`
-  * referencing files on the classpath with `cp://...`
-  * relative file urls for `file://...`
+  * variable expansion with deault values `${my-var:default}`
+  * extendable value-reader support, by default:
+    * including other configuration with `@:`
+    * referencing files on the classpath with `cp://...`
+    * or referincing files `file://...`
 
 
   A note on syntax and behaviour
 
-  Variable will be expanded to values either from other config
-  values, java properties, or the native environment. If it could
+  Variables will be expanded to values either from other config
+  values, java properties, or the native environment. If it can
   not be expanded its default value is taken. In case no default
   value was given an IllegalStateException is thrown.
   To reference a path in the confguration the variable
@@ -166,14 +128,11 @@
   lookups `.` is replaced with underscore and the final string
   uppercased.
 
-  Referencing configuration includes the target at point, i.e.
-  the file content will be inserted under the given key.
-  Referencing is done by prefixing a value with `@:`,
-  e.g. \"@:cp://abc\".
+  Referencing configuration with `@:` includes the target at point,
+  i.e. the file contents will be inserted at the given key.
 
-  Relative file urls will be made absolute by creating a file
-  and replacing its absolute path in the url, e.g.
-  `file://rel/path` -> `file:///tmp/rel/path`.
+  Relative file urls will be made absolute by replacing its absolute
+  path in the url, e.g. `file://rel/path` -> `file:///tmp/rel/path`.
 
 
   Example
@@ -184,7 +143,7 @@
   # file on classpath: happy-service.yml
   http-port: 8080
 
-  # file on fs (where java is invoked): crary-service.yml
+  # file on fs (where java is invoked): crazy-service.yml
   http-port: 8081
 
   # file on fs (where java is invoked): config.yml
@@ -203,52 +162,24 @@
   ```
 
   where `${expanded-from-env}` will be expanded
-  from the environment or its default value taken if
-  the value was not found."
-  [& urls-and-opts]
-  (let [[urls opts] (if (map? (last urls-and-opts))
-                      [(butlast urls-and-opts)
-                       (last urls-and-opts)]
-                      [urls-and-opts])
-        opts (merge {:transform-fn identity} opts)]
+  from the environment. Use default value if it
+  not found or throws when none was provided."
+  [& opts-and-urls]
+  (let [[opts urls] (if (map? (first opts-and-urls))
+                      [(first opts-and-urls)
+                       (rest opts-and-urls)]
+                      [nil opts-and-urls])
+        opts (merge
+               {:value-readers *default-value-readers*
+                :transform-fn identity}
+               opts)]
     (->> urls
          (transduce
            (comp
-             (map from-url)
+             (map p/from-url)
              (map expand-env)
-             (map process-map)
-             (map (:transform-fn opts)))
+             (map (partial process-map opts)))
            conj
            [])
-         (apply deep-merge))))
-
-(defprotocol ToUrl
-  (toUrl
-    [this]))
-
-(extend-type
-  java.io.File
-
-  ToUrl
-  (toUrl
-    [this]
-    (.toURL this)))
-
-(extend-type
-  java.lang.String
-
-  ToUrl
-  (toUrl
-    [this]
-    (if (.matches this ".+:\\/\\/.+")
-      (java.net.URL. this)
-      (toUrl (io/file this)))))
-
-(defn ->url
-  "Convenience function to build urls. Currently supports string
-  and file coercion.
-
-  If `v` is a string and is an url pattern, e.g `file:///abc`,
-  uses `(java.net.URL. v)` otherwise `(.toURL (java.io.File. v))`."
-  [v]
-  (toUrl v))
+         (apply deep-merge)
+         ((:transform-fn opts)))))
