@@ -1,34 +1,64 @@
 # Confucius
 
-A Clojure library for declarative configurations.
+A Clojure library for declarative configuration.
 
+*NOTE* This is pre-alpha software. Expect bugs and
+frequent enough api changes!
+
+Suggestions on api, bugfixes, feature request, etc are
+all very welcome!
 
 # Motivation
+
+TBD
 
 * https://github.com/levand/immuconf
 * https://github.com/jarohen/nomad
 * http://12factor.net/config
 
 
+# TODO
+
+* use a parse context, e.g.
+    * to support variable expansion over mulpitle files
+    * for better error messages
+* warn/log when config properties are being overwritten by
+  other files
+
+
 # Quick Start
 
-Given the configuration files
+Given three configuration files
 
 ```yaml
-# cool.yml (on the classpath)
+# file: awesome-service.yml (on classpath)
+http:
+  bind-address: "0.0.0.0"
+  port: 80
 
-do-awesome-thing:
-  every-sec: "${COOL.PROP:10}"
+# Include configuration from `sub-system.json`.
+# Supports relative file urls.
+subsys: "@:file://./subsys.json"
 
-# replace value of `some-other-config` and
-# `yet-some-other-config` with the data
-# from `soc.json`
-some-other-config: "@:cp://soc.json"
-yet-some-other-config: "@:file://ysoc.yml"
-
+# Reference (in that order) either
+# another value in the configuration,
+# a java system property or the native
+# enrivonment
+audit-log: "${install-dir:/tmp}/audit"
 ```
 
-the following code will load the configuration:
+```json
+# file: subsys.json (file system)
+{ "id" : "subsys1" }
+```
+
+```yaml
+# file: host.yml
+http:
+  port: 8080
+```
+
+and loading it as follows
 
 ```clojure
 (ns my.amazing.ns
@@ -37,39 +67,49 @@ the following code will load the configuration:
   [clojure.java.io :as io))
 
 (c/load-config
- (io/resource "cool.yml")
- (c/->url "platform.yml")   ;; Helper function to build urls
- (c/->url "host.json"))     ;; see doc for deatils.
-
-=> {:global
-     {:option 1}
-    :amazing
-     {:http
-       {:bind-address "localhost"
-        :port 1}}}
+ (io/resource "awesome-service.yml")
+ (c/->url "host.yml"))
 ```
 
-`load-config` load urls from left-to-right by (deep-)
-merging each resulting map into a single configuration map.
-This makes it possible to freely compose and override configuration
-based. Values in the configuration may in turn again reference
-other configuration (on the classpath, the filesystem or
-by url) or reference environment vars or java system properties
-with optional default values.
+will result in the configuration map
 
+```clojure
+{:http
+ {:bind-address "0.0.0.0"
+  :port 8080}
+
+ :audit-log-dir
+ "/opt/service/tmp/audit"  ;; assuming ${install-dir} was
+                           ;; set to `/opt/service` in the
+                           ;; native environment
+
+ :subsys
+ {:id "subsys1"}}
+```
+
+More to come... for an extensive example see the test ns
+`confucius.example_test.clj`
 
 # Documentation
 
-
+TBD
 
 
 ## Extending
+
+TBD
 
 `confucius.proto/from-url`
 
 `confucius.proto/ToUrl`
 
 `confucius.proto/ValueReader`
+
+
+* Other projects
+
+* https://github.com/levand/immuconf
+* https://github.com/jarohen/nomad
 
 
 # Features? Suggesions? Issues?

@@ -1,0 +1,14 @@
+global:
+  install-dir: "/usr/local/services"
+
+service1:
+  http:
+    bind-address: "0.0.0.0"
+
+    # Not found, so use default
+    port: "${service1-http-port:80}"
+
+  # Throws if no default value is given
+  log-dir: "${global.install-dir}/log"
+
+service2: "@:cp://example/srv2.yml"

@@ -1,0 +1,7 @@
+service1:
+  http:
+    port: "8080"
+
+service2:
+  http:
+    port: "8081"

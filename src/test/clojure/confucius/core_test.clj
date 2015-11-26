@@ -27,13 +27,15 @@
                      :on-classpath {:abc 1}}}]
       ;; classpath
       (is (= expected
-             (.process
+             (p/process
                include-value-reader
+               {}
                "@:cp://test1.yml")))
       ;; file
       (is (= expected
-             (.process
+             (p/process
                include-value-reader
+               {}
                "@:file://src/test/resources/test1.yml")))))
 
   (testing "classpath handling"
@@ -44,9 +46,4 @@
 
                :on-fs-rel
                {:abc 1}}}
-             cfg))))
-
-  (testing "defaults"
-    #_(is (= {}
-             (load-config
-               (io/resource "test1.yml"))))))
+             cfg)))))

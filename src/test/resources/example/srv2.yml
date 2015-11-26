@@ -1,0 +1,5 @@
+http:
+  bind-address: "0.0.0.0"
+  port: "${service2-http-port:80}"
+
+log-dir: "FIXME: resolve in base doesn't work -> $ { global . install-dir }"

@@ -13,7 +13,7 @@
   "Classpath value reader."
   (reify p/ValueReader
     (process
-      [this value]
+      [this ctx value]
       (when-let [value (unprefix value "cp://")]
         (if-let [url (io/resource value)]
           url
@@ -25,7 +25,7 @@
   "File ref value reader."
   (reify p/ValueReader
     (process
-      [this value]
+      [this ctx value]
       (when-let [path (io/file (unprefix value "file://"))]
         (if-let [url (and (.isFile path) (-> path (.toURI) (.toURL)))]
           url
@@ -37,13 +37,13 @@
   "Includes either file or classpath refs."
   (reify p/ValueReader
     (process
-      [this value]
+      [this ctx value]
       (when-let [value (unprefix value "@:")]
-        (let [url (or (p/process classpath-value-reader value)
-                      (p/process fileref-value-reader value))]
+        (let [url (or (p/process classpath-value-reader ctx value)
+                      (p/process fileref-value-reader ctx value))]
           (assert (instance? java.net.URL url)
                   (str "Not a valid url: " url))
-          (load-config url))))))
+          (load-config ctx url))))))
 
 (defn ^:private expand-env
   ([v]
@@ -63,22 +63,23 @@
      v)))
 
 (defn ^:private process-map
-  [{:keys [value-readers] :as opts} m]
+  [{:keys [value-readers] :as opts} cfg]
   (letfn [(first-wins
-            [value-readers v]
+            [value-readers opts v]
             (loop [value-readers value-readers]
-              (when-let [rdr  (first value-readers)]
-                (or (.process rdr v)
+              (when-let [rdr (first value-readers)]
+                (or (p/process rdr opts v)
                     (recur (next value-readers))))))]
     (reduce
-      (fn [acc [k v]]
+      (fn [cfg [k v]]
         (assoc
-          acc k
-          (or (first-wins value-readers v)
+          cfg
+          k
+          (or (first-wins value-readers opts v)
               (and (map? v) (process-map opts v))
               v)))
-      {}
-      m)))
+      cfg
+      cfg)))
 
 (def ^:dynamic *default-value-readers*
   "Default value readers."
@@ -174,12 +175,13 @@
                 :transform-fn identity}
                opts)]
     (->> urls
-         (transduce
-           (comp
-             (map p/from-url)
-             (map expand-env)
-             (map (partial process-map opts)))
-           conj
-           [])
-         (apply deep-merge)
-         ((:transform-fn opts)))))
+         (reduce
+           (fn [cfg url]
+             (deep-merge
+               cfg
+               (->> url
+                    (p/from-url)
+                    (expand-env)
+                    (process-map opts))))
+           {})
+    ((:transform-fn opts)))))
