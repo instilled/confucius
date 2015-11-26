@@ -3,7 +3,7 @@
 A Clojure library for declarative configuration.
 
 *NOTE* This is pre-alpha software. Expect bugs and
-frequent enough api changes!
+frequent api changes!
 
 Suggestions on api, bugfixes, feature request, etc are
 all very welcome!
