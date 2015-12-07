@@ -22,7 +22,7 @@
        (do (into (empty v) (map #(process opts ctx %) v)))
 
        (string? v)
-       (let [v (envify m v)] (or (first-wins opts ctx v) v))
+       (let [v (envify ctx v)] (or (first-wins opts ctx v) v))
 
        :else
        v))))

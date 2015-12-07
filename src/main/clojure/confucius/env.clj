@@ -20,10 +20,10 @@
 
 (defn ^:private from-env
   "Recursively expand `env`."
-  [ctx env & [default]]
-  (letfn [(->ctx  [^String s]
+  [[m :as ctx] env & [default]]
+  (letfn [(->ctx [^String s]
             (when-let [p (seq (map keyword (.split s "\\.")))]
-              (get-in ctx p)))
+              (get-in m p)))
 
           (->jvmn [^String s]
             (System/getProperty s))
@@ -36,7 +36,6 @@
     (let [v (or
               (->ctx env)
               (->jvmn env)
-              (->envn env)
               (->envn env)
               default
               (throw
