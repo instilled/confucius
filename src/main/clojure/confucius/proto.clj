@@ -1,7 +1,7 @@
 (ns confucius.proto)
 
 (defprotocol ValueReader
-  (process [this ctx v] "Return the processed value or nil if valuereader does not apply."))
+  (process [this opts ctx v] "Return the processed value or nil if valuereader does not apply."))
 
 (defprotocol ToUrl
   (toUrl [this]))

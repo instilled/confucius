@@ -17,7 +17,7 @@
             {:http
              {:bind-address "0.0.0.0"
               :port "80"}
-             :log-dir "FIXME: resolve in base doesn't work -> $ { global . install-dir }"}}
+             :log-dir "/usr/local/services/log"}}
            (c/load-config
              (io/resource "example/base.yml")))))
 
@@ -33,7 +33,7 @@
             {:http
              {:bind-address "0.0.0.0"
               :port "8081"}
-             :log-dir "FIXME: resolve in base doesn't work -> $ { global . install-dir }"}}
+             :log-dir "/usr/local/services/log"}}
            (c/load-config
              (io/resource "example/base.yml")
              (io/resource "example/host.yml"))))))

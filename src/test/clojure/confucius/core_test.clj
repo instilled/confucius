@@ -29,13 +29,15 @@
       (is (= expected
              (p/process
                include-value-reader
-               {}
+               {:value-readers *default-value-readers*}
+               [{}]
                "@:cp://test1.yml")))
       ;; file
       (is (= expected
              (p/process
                include-value-reader
-               {}
+               {:value-readers *default-value-readers*}
+               [{}]
                "@:file://src/test/resources/test1.yml")))))
 
   (testing "classpath handling"

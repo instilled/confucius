@@ -1,85 +1,67 @@
 (ns confucius.core
   (:require
-    [confucius.proto   :as    p]
-    [confucius.ext]
-    [confucius.env     :refer [envify]]
-    [confucius.utils   :refer [deep-merge unprefix]]
-    [clojure.walk      :refer [walk postwalk]]
-    [clojure.java.io   :as    io]))
+   [confucius.proto   :as    p]
+   [confucius.ext]
+   [confucius.env     :refer [envify]]
+   [confucius.utils   :refer [deep-merge unprefix postwalkx]]
+   [clojure.java.io   :as    io]))
 
-(declare load-config)
+(defn ^:private process
+  ([opts [m path :as ctx] v]
+   (letfn [(first-wins
+            [{:keys [value-readers] :as opts} ctx v]
+            (loop [value-readers value-readers]
+              (when-let [rdr (first value-readers)]
+                (or (p/process rdr opts ctx v)
+                    (recur (next value-readers))))))]
+     (cond
+       (map? v)
+       (into {} (map (fn [[k v*]] [k (process opts [m (conj path k)] v*)]) v))
+
+       (coll? v)
+       (do (into (empty v) (map #(process opts ctx %) v)))
+
+       (string? v)
+       (let [v (envify m v)] (or (first-wins opts ctx v) v))
+
+       :else
+       v))))
 
 (def classpath-value-reader
   "Classpath value reader."
   (reify p/ValueReader
-    (process
-      [this ctx value]
+    (process [this opts [m path :as ctx] value]
       (when-let [value (unprefix value "cp://")]
         (if-let [url (io/resource value)]
           url
           (throw
-            (IllegalStateException.
-              (str "Resource not found: " value))))))))
+           (IllegalStateException.
+            (str "Resource not found: " value))))))))
 
 (def fileref-value-reader
   "File ref value reader."
   (reify p/ValueReader
     (process
-      [this ctx value]
+        [this opts [m path :as ctx] value]
       (when-let [path (io/file (unprefix value "file://"))]
         (if-let [url (and (.isFile path) (-> path (.toURI) (.toURL)))]
           url
           (throw
-            (IllegalStateException.
-              (str "File not found: " value))))))))
+           (IllegalStateException.
+            (str "File not found: " value))))))))
 
 (def include-value-reader
   "Includes either file or classpath refs."
   (reify p/ValueReader
     (process
-      [this ctx value]
+        [this opts [m path :as ctx] value]
       (when-let [value (unprefix value "@:")]
-        (let [url (or (p/process classpath-value-reader ctx value)
-                      (p/process fileref-value-reader ctx value))]
+        (let [url (or (p/process classpath-value-reader opts ctx value)
+                      (p/process fileref-value-reader opts ctx value))]
           (assert (instance? java.net.URL url)
                   (str "Not a valid url: " url))
-          (load-config ctx url))))))
-
-(defn ^:private expand-env
-  ([v]
-   (expand-env v v))
-  ([ctx v]
-   (cond
-     (map? v)
-     (reduce (fn [acc [k v]] (assoc acc k (expand-env ctx v))) v v)
-
-     (coll? v)
-     (into (empty v) (map (partial expand-env ctx) v))
-
-     (string? v)
-     (envify ctx v)
-
-     :else
-     v)))
-
-(defn ^:private process-map
-  [{:keys [value-readers] :as opts} cfg]
-  (letfn [(first-wins
-            [value-readers opts v]
-            (loop [value-readers value-readers]
-              (when-let [rdr (first value-readers)]
-                (or (p/process rdr opts v)
-                    (recur (next value-readers))))))]
-    (reduce
-      (fn [cfg [k v]]
-        (assoc
-          cfg
-          k
-          (or (first-wins value-readers opts v)
-              (and (map? v) (process-map opts v))
-              v)))
-      cfg
-      cfg)))
+          (let [m* (p/from-url url)]
+            (process opts [(assoc-in m path m*) path] m*)))))))
 
 (def ^:dynamic *default-value-readers*
   "Default value readers."
@@ -90,7 +72,7 @@
 (defn ->url
   "Convenience function to build urls. By default supports string
   and file coercion. Protocol `confucius.proto/ToUrl` may be
-  extended to add more support."
+  extended to support other types."
   [v]
   (p/toUrl v))
 
@@ -171,17 +153,18 @@
                        (rest opts-and-urls)]
                       [nil opts-and-urls])
         opts (merge
-               {:value-readers *default-value-readers*
-                :transform-fn identity}
-               opts)]
+              {:value-readers *default-value-readers*
+               :transform-fn identity}
+              opts)]
     (->> urls
          (reduce
-           (fn [cfg url]
-             (deep-merge
-               cfg
-               (->> url
-                    (p/from-url)
-                    (expand-env)
-                    (process-map opts))))
+           (fn [m url]
+             (let [m* (p/from-url url)]
+               (deep-merge
+                m
+                (process
+                 opts
+                 [(deep-merge m m*) []]
+                 m*))))
            {})
-    ((:transform-fn opts)))))
+         ((:transform-fn opts)))))

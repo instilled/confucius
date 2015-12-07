@@ -19,9 +19,9 @@ TBD
 
 # TODO
 
-* use a parse context, e.g.
-    * to support variable expansion over mulpitle files
-    * for better error messages
+* for better error messages for parser
+* support printing of configuration map (and intermediate
+  changes)
 * warn/log when config properties are being overwritten by
   other files
 
