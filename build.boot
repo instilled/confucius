@@ -11,6 +11,8 @@
    :url
    "https://github.com/instilled/confucius"})
 
+;; https://lionfacelemonface.wordpress.com/2015/04/11/advanced-boot-scripting/
+
 (set-env!
   :source-paths
   #{"src/main/clojure"}
@@ -44,7 +46,7 @@
     :include #{#".*\.swp" #".gitkeep"}))
 
 (deftask dev
-  "Profile setup for running tests."
+  "Pull in test dependencies."
   []
   (merge-env!
     :source-paths
@@ -55,6 +57,7 @@
   identity)
 
 (deftask test-repeatedly
+  "Repeatedly execute tests."
   []
   (comp
     (dev)
@@ -63,6 +66,7 @@
     (test)))
 
 (deftask test-single
+  "Run a single test pass."
   []
   (comp
     (dev)
@@ -70,10 +74,11 @@
     (test)))
 
 (deftask build
+  "Build the shizzle."
   []
   ;; Only :resource-paths will be added to the final
   ;; aritfact. Thus we need to merge :source-paths
-  ;; into :resources-paths.
+  ;; into :resources-paths. see https://github.com/boot-clj/boot/wiki/Boot-Environment#env-keys
   (merge-env!
     :resource-paths
     #{"src/main/cloujure"})
