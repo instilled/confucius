@@ -1,10 +1,10 @@
 (ns confucius.core-test
   (:require
-    [confucius.core  :as    c
-                     :refer :all]
-    [confucius.proto :as    p]
-    [clojure.java.io :as    io]
-    [clojure.test    :refer :all]))
+    [confucius.core       :as    c :refer :all]
+    [confucius.proto      :as    p]
+    [confucius.ext.all]
+    [clojure.java.io      :as    io]
+    [clojure.test         :refer :all]))
 
 (deftest test-envify
   (testing "precedence"
@@ -44,7 +44,7 @@
 
 (deftest test-from-url
   (testing "yaml"
-    (let [r (p/from-url (io/resource "test1.yml"))]
+    (let [r (p/load (io/resource "test1.yml"))]
       (is (instance?
             clojure.lang.PersistentArrayMap
             (get r :abc)))
@@ -54,11 +54,12 @@
   (testing "json"
     (is (= {:abc {:on-classpath "@:cp://test2.yml"
                   :on-fs-rel "@:file://src/test/resources/test2.yml"}}
-           (p/from-url (io/resource "test1.json"))))))
+           (p/load (io/resource "test1.json"))))))
 
 (deftest test-load-config
   (testing "include"
-    (let [expected {:abc
+    (let [ctx [{}]
+          expected {:abc
                     {:on-fs-rel {:abc 1}
                      :on-classpath {:abc 1}}}]
       ;; classpath
@@ -66,19 +67,21 @@
              (p/process
                include-value-reader
                {:value-readers *default-value-readers*}
-               [{}]
+               ctx
                "@:cp://test1.yml")))
       ;; file
       (is (= expected
              (p/process
                include-value-reader
                {:value-readers *default-value-readers*}
-               [{}]
+               ctx
                "@:file://src/test/resources/test1.yml")))))
 
-  (testing "classpath handling"
-    (let [cfg (load-config (io/resource "test1.yml"))]
-      (is (= {:abc
+  (testing "load-config with multiple `ConfigSource'"
+    (let [cfg (load-config [{:from-map 1}
+                            (io/resource "test1.yml")])]
+      (is (= {:from-map 1
+              :abc
               {:on-classpath
                {:abc 1}
 

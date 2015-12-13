@@ -1,17 +1,19 @@
-(def artifact
-  {:project
-   'confucius/confucius
+(task-options!
+ pom {:project
+      'confucius/confucius
 
-   :version
-   "0.0.1-SNAPSHOT"
+      :version
+      "0.0.1-SNAPSHOT"
 
-   :description
-   "A library for declarative configuration."
+      :description
+      "A library for declarative configuration."
 
-   :url
-   "https://github.com/instilled/confucius"})
+      :scm
+      {:url "https://github.com/instilled/confucius"}
 
-;; https://lionfacelemonface.wordpress.com/2015/04/11/advanced-boot-scripting/
+      :url
+      "https://github.com/instilled/confucius"}
+ jar {:file "confucius.jar"})
 
 (set-env!
   :source-paths
@@ -21,23 +23,19 @@
   #{"src/main/clojure"}
 
   :dependencies
-  '[[org.yaml/snakeyaml                   "1.16"]
-    [org.clojure/data.json                "0.2.6"]
-    [org.clojure/tools.logging            "0.3.1"
+  '[[org.clojure/clojure                  "1.7.0"
      :scope "provided"]
-    [org.clojure/clojure                  "1.7.0"
+    [org.yaml/snakeyaml                   "1.16"
+     :scope "provided"]
+    [org.clojure/data.json                "0.2.6"
      :scope "provided"]
 
     ;; test dependencies
-    [org.apache.logging.log4j/log4j-core  "2.3"]
     [adzerk/boot-test                     "1.0.4"
      :scope "test"]])
 
-(task-options!
-  pom artifact)
-
 (require
-  '[adzerk.boot-test :refer :all])
+ '[adzerk.boot-test :refer :all])
 
 (deftask remove-ignored
   []
@@ -56,20 +54,14 @@
     #{"src/test/resources"})
   identity)
 
+(replace-task!
+ [t test] (fn [& xs] (comp (dev) (apply t xs))))
+
 (deftask test-repeatedly
   "Repeatedly execute tests."
   []
   (comp
-    (dev)
     (watch)
-    (speak)
-    (test)))
-
-(deftask test-single
-  "Run a single test pass."
-  []
-  (comp
-    (dev)
     (speak)
     (test)))
 
@@ -86,4 +78,5 @@
     (remove-ignored)
     (pom)
     (jar)
+    (target :dir #{"target"})
     (install)))

@@ -1,6 +1,7 @@
 (ns confucius.example-test
   (:require
     [confucius.core  :as    c]
+    [confucius.ext.all]
     [clojure.java.io :as    io]
     [clojure.test    :refer :all]))
 
@@ -19,7 +20,7 @@
               :port "80"}
              :log-dir "/usr/local/services/log"}}
            (c/load-config
-             (io/resource "example/base.yml")))))
+            [(io/resource "example/base.yml")]))))
 
   (testing "base with host"
     (is (= {:global
@@ -35,5 +36,5 @@
               :port "8081"}
              :log-dir "/usr/local/services/log"}}
            (c/load-config
-             (io/resource "example/base.yml")
-             (io/resource "example/host.yml"))))))
+            [(io/resource "example/base.yml")
+             (io/resource "example/host.yml")])))))

@@ -1,7 +1,9 @@
-(ns confucius.core
+(ns ^{:author "Fabio Bernasconi"
+      :doc "Tools for working with configuration maps."}
+    confucius.core
   (:require
    [confucius.proto   :as    p]
-   [confucius.ext]
+   [confucius.impl]
    [confucius.utils   :refer [deep-merge unprefix postwalkx]]
    [clojure.java.io   :as    io]))
 
@@ -9,13 +11,13 @@
   "Extract var from `s`."
   [s]
   (into
-    []
-    (.split
-      (-> s
-          (.substring 0 (- (.length s) 1))
-          (.substring 2))
-      ":"
-      2)))
+   []
+   (.split
+    (-> s
+        (.substring 0 (- (.length s) 1))
+        (.substring 2))
+    ":"
+    2)))
 
 (defn ^:private extract-vars
   [s]
@@ -39,13 +41,13 @@
                 (.toUpperCase)
                 (System/getenv)))]
     (let [v (or
-              (->ctx env)
-              (->jvmn env)
-              (->envn env)
-              default
-              (throw
-                (IllegalStateException.
-                  (str "Reference not found in environment and no default provided! Var: " env))))]
+             (->ctx env)
+             (->jvmn env)
+             (->envn env)
+             default
+             (throw
+              (IllegalStateException.
+               (str "Reference not found in environment and no default provided! Var: " env))))]
       (if (extract-vars v) (envify ctx v) v))))
 
 (defn envify
@@ -59,22 +61,22 @@
   the string, e.g. `var.name` -> `VAR_NAME`."
   [ctx s]
   (reduce
-    (fn [s r]
-      (let [v (apply from-env ctx (parse-var r))]
-        (if v
-          (.replace s r v)
-          s)))
-    s
-    (extract-vars s)))
+   (fn [s r]
+     (let [v (apply from-env ctx (parse-var r))]
+       (if v
+         (.replace s r v)
+         s)))
+   s
+   (extract-vars s)))
 
 (defn ^:private process
   ([opts [m path :as ctx] v]
    (letfn [(first-wins
-            [{:keys [value-readers] :as opts} ctx v]
-            (loop [value-readers value-readers]
-              (when-let [rdr (first value-readers)]
-                (or (p/process rdr opts ctx v)
-                    (recur (next value-readers))))))]
+             [{:keys [value-readers] :as opts} ctx v]
+             (loop [value-readers value-readers]
+               (when-let [rdr (first value-readers)]
+                 (or (p/process rdr opts ctx v)
+                     (recur (next value-readers))))))]
      (cond
        (map? v)
        (into {} (map (fn [[k v*]] [k (process opts [m (conj path k)] v*)]) v))
@@ -121,7 +123,7 @@
                       (p/process fileref-value-reader opts ctx value))]
           (assert (instance? java.net.URL url)
                   (str "Not a valid url: " url))
-          (let [m* (p/from-url url)]
+          (let [m* (p/load url)]
             (process opts [(assoc-in m path m*) path] m*)))))))
 
 (def ^:dynamic *default-value-readers*
@@ -130,23 +132,20 @@
    classpath-value-reader
    fileref-value-reader])
 
-(defn ->url
-  "Convenience function to build urls. By default supports string
-  and file coercion. Protocol `confucius.proto/ToUrl` may be
-  extended to support other types."
-  [v]
-  (p/toUrl v))
-
 (defn load-config
-  "Load configuration data from `opts-and-urls`. Does deep-merging
+  "Load configuration data from `sources`. Does deep-merging
   of the data from left to right to form the final configuration
-  map. Reads`*.yml|yaml` or `*.json` encoded content.
-  The first value in `opts-and-urls` may be a map with further
-  options:
+  map. Supports different data sources such as clojure datastructures
+  (maps, seqs, vecs), urls or files (currently supports `edn`, `yaml`
+  or `json` encoded content), or attempts to coerce strings to urls.
 
-  :transform-fn   One arity fn taking the configuration to
-                  be transformed. Must return the modified
-                  configuration.
+  `opts` may be a map with the keys:
+
+  :postprocess-fn One arity fn taking the configuration to
+                  be post processed. Must return the modified
+                  configuration. This may be used e.g. to
+                  schema validate the final configuration
+                  map.
   :value-readers  By default uses `include-value-reader`,
                   `classpath-value-reader` and
                   `fileref-value-reader`. See
@@ -163,20 +162,22 @@
   A note on syntax and behaviour
 
   Variables will be expanded to values either from other config
-  values, java properties, or the native environment. If it can
-  not be expanded its default value is taken. In case no default
+  values, java properties, or the native environment. If expansion
+  fails the default value is taken. In case no default
   value was given an IllegalStateException is thrown.
   To reference a path in the confguration the variable
   is split at `.` and each segment keywordized, e.g. `${a.b.c}`
   will result in `(get-in cfg [:a :b :c])`. For native env
   lookups `.` is replaced with underscore and the final string
-  uppercased.
+  uppercased. Takes the value as is for lookups in the Java System
+  Property.
 
   Referencing configuration with `@:` includes the target at point,
   i.e. the file contents will be inserted at the given key.
 
-  Relative file urls will be made absolute by replacing its absolute
-  path in the url, e.g. `file://rel/path` -> `file:///tmp/rel/path`.
+  Relative file urls will be made absolute by replacing the relative
+  part with an absolute path, e.g.
+  `file://rel/path` or `file://./rel/path` -> `file:///tmp/rel/path`.
 
 
   Example
@@ -208,19 +209,17 @@
   where `${expanded-from-env}` will be expanded
   from the environment. Use default value if it
   not found or throws when none was provided."
-  [& opts-and-urls]
-  (let [[opts urls] (if (map? (first opts-and-urls))
-                      [(first opts-and-urls)
-                       (rest opts-and-urls)]
-                      [nil opts-and-urls])
-        opts (merge
-              {:value-readers *default-value-readers*
-               :transform-fn identity}
-              opts)]
-    (->> urls
-         (reduce
-           (fn [m url]
-             (let [m* (p/from-url url)]
+  ([sources]
+   (load-config nil sources))
+  ([opts sources]
+   (let [opts (merge
+               {:value-readers *default-value-readers*
+                :postprocess-fn identity}
+               opts)]
+     (->> sources
+          (reduce
+           (fn [m source]
+             (let [m* (p/load source)]
                (deep-merge
                 m
                 (process
@@ -228,4 +227,4 @@
                  [(deep-merge m m*) []]
                  m*))))
            {})
-         ((:transform-fn opts)))))
+          ((:postprocess-fn opts))))))
