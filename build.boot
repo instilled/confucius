@@ -31,6 +31,8 @@
      :scope "provided"]
 
     ;; test dependencies
+    [org.clojure/tools.cli                "0.3.3"
+     :scope "test"]
     [adzerk/boot-test                     "1.0.4"
      :scope "test"]])
 

@@ -9,18 +9,17 @@ Suggestions on api, bugfixes, feature request, etc are all very welcome!
 
 # Rationale
 
-Although zero configuration whould be awesome, in most cases it is not possible (sometimes
-it is though: [elasticsearch][elasticsearch]). Application that require configuration
-should be configurable through the environment they live in (see [12factor][12factor]).
-Unfortunately this is not always easy as it may clutter your application with `(Sytem/getenv)`
-calls that return data that is not typed. Also it makes it impossible to put all your
-configuration in one place so that it is easily readable  or even to provide
-sensible default values. Further, adding configuration to version control is awesome too.
-Finally configuration should also be passed as parameters to program invocation.
+Although zero configuration is awesome, in most cases it is not achieavable
+(sometimes though it is: [elasticsearch][elasticsearch]).
+Applications that require configuration should read the values from the
+environment they live in (see [12factor][12factor]). Unfortunately this may
+clutter the application with `(Sytem/getenv)` calls that return un-typed data.
+Having all the configuration related data in one handy map and provide sensible default values wherever possible should be the the way to go. This makes it easy
+to add configuration to version control too!
 
-`confucius` aims at solving exactly these problems. It builds on some of the ideas from
-other libraries such as [immuconf][immuconf] (composability), [nomad][nomad],
-or [environ][environ].
+`confucius` aims at solving exactly these problems. It builds on some of the
+ideas from other libraries such as [immuconf][immuconf] (composability),
+[nomad][nomad], or [environ][environ].
 
 
 # Quick Start
@@ -97,6 +96,8 @@ audit-log: "${log-dir}/service/audit"
 More to come... for an extensive example see the test ns
 `confucius.example_test.clj`
 
+See `confucius.cli` for an example how to integrate
+command line argument parsing.
 
 # Documentation
 

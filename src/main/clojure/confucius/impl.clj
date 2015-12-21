@@ -3,9 +3,9 @@
     confucius.impl
   (:refer-clojure   :exclude [load])
   (:require
-   [confucius.proto :refer [ConfigSource from-url]]
+   [confucius.proto :refer [ConfigSource from-url] :as p]
    [confucius.utils :refer [keywordize-keys]]
-   [clojure.edn     :as edn]
+   [clojure.edn     :as    edn]
    [clojure.java.io :as    io]))
 
 (extend-type clojure.lang.IPersistentMap
@@ -22,7 +22,8 @@
   ConfigSource
   (load [this]
     (-> this
-        (.toUrl)
+        (.toURI)
+        (.toURL)
         (from-url))))
 
 (extend-type java.lang.String
@@ -31,7 +32,11 @@
     (from-url
      (if (.matches this ".+:\\/\\/.+")
        (java.net.URL. this)
-       (.toUrl (io/file this))))))
+       (-> this
+           (io/file)
+           (.toURI)
+           (.toURL)
+           #_(p/load))))))
 
 ;; -------------
 ;; from-url default impls
