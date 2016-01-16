@@ -33,7 +33,7 @@
     ;; test dependencies
     [org.clojure/tools.cli                "0.3.3"
      :scope "test"]
-    [adzerk/boot-test                     "1.0.4"
+    [adzerk/boot-test                     "1.1.0"
      :scope "test"]])
 
 (require
@@ -82,3 +82,17 @@
     (jar)
     (target :dir #{"target"})
     (install)))
+
+(deftask deploy
+  []
+  (push
+   :gpg-sign true
+   ;;:gpg-user-id "BFE605B5"
+   :repo "clojars"
+   ;;:ensure-branch "master"
+   ;;:ensure-clean true
+   ;;:ensure-release true
+   ;;:ensure-snapshot true
+   ;;:ensure-tag ""
+   ;;:ensure-version ""
+   ))
