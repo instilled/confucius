@@ -6,16 +6,16 @@ A Clojure library for composable and declarative configuration.
 
 Suggestions on api, bugfixes, feature request, etc are all very welcome!
 
+[![Clojars Project](https://img.shields.io/clojars/v/confucius.svg)](https://clojars.org/confucius)
 
 # Rationale
 
-Although zero configuration is awesome, in most cases it is not achieavable
-(sometimes though it is: [elasticsearch][elasticsearch]).
 Applications that require configuration should read the values from the
 environment they live in (see [12factor][12factor]). Unfortunately this may
 clutter the application with `(Sytem/getenv)` calls that return un-typed data.
-Having all the configuration related data in one handy map and provide sensible default values wherever possible should be the the way to go. This makes it easy
-to add configuration to version control too!
+Having all the configuration related data in one handy map that can read properties
+from the environment and provide sensible default values wherever possible should 
+be the the way to go. This makes it easy to add configuration to version control too!
 
 `confucius` aims at solving exactly these problems. It builds on some of the
 ideas from other libraries such as [immuconf][immuconf] (composability),
@@ -24,9 +24,9 @@ ideas from other libraries such as [immuconf][immuconf] (composability),
 
 # Quick Start
 
-The following clojure code will, given the configuration files
-`awesome-service.yml`, `host.edn`, `subsys.json` (file contents
-listed further down), yield
+The configuration files (`awesome-service.yml`, `host.edn`, `subsys.json`)
+used in the example are listed below the code snippet. The following clojure
+code shows briefly outlines usage.
 
 ```clojure
 (ns my.amazing.ns
