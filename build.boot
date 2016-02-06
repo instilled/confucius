@@ -37,7 +37,9 @@
      :scope "test"]])
 
 (require
- '[adzerk.boot-test :refer :all])
+  '[adzerk.boot-test :refer :all]
+  '[boot.gpg             :as gpg]
+  '[boot.util            :as util])
 
 (deftask remove-ignored
   []
@@ -67,6 +69,40 @@
     (speak)
     (test)))
 
+(deftask debugme
+  []
+  (with-pass-thru [fs]
+    (clojure.pprint/pprint (get-env))
+    (clojure.pprint/pprint (output-files fs))
+
+    ;;(println "fs: " fs)
+    fs))
+
+(deftask sign2
+  [k gpg-user-id    KEY  str  "The name or key-id used to select the signing key."
+   p gpg-passphrase PASS str  "The passphrase to unlock GPG signing key."]
+  (let [tgt (tmp-dir!)]
+    (with-pass-thru [fs]
+      (empty-dir! tgt)
+      (let [[pom & p] (->> (output-files fs)
+                           (by-name ["pom.xml"])
+                           (map tmp-file))
+            jarfiles (->> (output-files fs)
+                          (by-ext [".jar"])
+                          (map tmp-file))]
+        (when-not (and pom (seq jarfiles))
+          (throw (Exception. "missing pom or jar file")))
+        (let [signed (reduce
+                       (fn [acc f]
+                         (util/info "Signing %s...\n" (.getName f))
+                         (assoc acc (.getName f)
+                                (gpg/sign-jar tgt f pom {:gpg-key gpg-user-id
+                                                         :gpg-passphrase gpg-passphrase})))
+                       {} jarfiles)]
+          ;;(set-env! :signed-artifacts signed)
+          (-> fs (add-resource tgt) commit!))))))
+
+
 (deftask build
   "Build the shizzle."
   []
@@ -80,13 +116,14 @@
     (remove-ignored)
     (pom)
     (jar)
-    (target :dir #{"target"})
+    (sign2)
+    (target)
     (install)))
 
 (deftask deploy
   []
   (push
-   :gpg-sign true
+   ;;:gpg-sign true
    ;;:gpg-user-id "BFE605B5"
    :repo "clojars"
    ;;:ensure-branch "master"
