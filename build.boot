@@ -1,19 +1,19 @@
 (task-options!
- pom {:project
-      'confucius/confucius
+  pom {:project
+       'confucius/confucius
 
-      :version
-      "0.0.1-SNAPSHOT"
+       :version
+       "0.0.1-SNAPSHOT"
 
-      :description
-      "A library for declarative configuration."
+       :description
+       "A library for declarative configuration."
 
-      :scm
-      {:url "https://github.com/instilled/confucius"}
+       :scm
+       {:url "https://github.com/instilled/confucius"}
 
-      :url
-      "https://github.com/instilled/confucius"}
- jar {:file "confucius.jar"})
+       :url
+       "https://github.com/instilled/confucius"}
+  jar {:file "confucius.jar"})
 
 (set-env!
   :source-paths
@@ -21,6 +21,9 @@
 
   :resource-paths
   #{"src/main/clojure"}
+
+  :target-path
+  "target"
 
   :dependencies
   '[[org.clojure/clojure                  "1.7.0"
@@ -37,7 +40,7 @@
      :scope "test"]])
 
 (require
- '[adzerk.boot-test :refer :all])
+  '[adzerk.boot-test :refer :all])
 
 (deftask remove-ignored
   []
@@ -57,7 +60,7 @@
   identity)
 
 (replace-task!
- [t test] (fn [& xs] (comp (dev) (apply t xs))))
+  [t test] (fn [& xs] (comp (dev) (apply t xs))))
 
 (deftask test-repeatedly
   "Repeatedly execute tests."
@@ -80,19 +83,11 @@
     (remove-ignored)
     (pom)
     (jar)
-    (target :dir #{"target"})
+    (target)
     (install)))
 
 (deftask deploy
   []
   (push
-   :gpg-sign true
-   ;;:gpg-user-id "BFE605B5"
-   :repo "clojars"
-   ;;:ensure-branch "master"
-   ;;:ensure-clean true
-   ;;:ensure-release true
-   ;;:ensure-snapshot true
-   ;;:ensure-tag ""
-   ;;:ensure-version ""
-   ))
+    :gpg-sign false
+    :repo "clojars"))
