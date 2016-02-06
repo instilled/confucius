@@ -1,5 +1,0 @@
-http:
-  bind-address: "0.0.0.0"
-  port: "${service2-http-port:80}"
-
-log-dir: "${global.install-dir}/log"

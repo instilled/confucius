@@ -11,4 +11,10 @@ service1:
   # Throws if no default value is given
   log-dir: "${global.install-dir}/log"
 
-service2: "@:cp://example/srv2.yml"
+service2:
+  http:
+    bind-address: "0.0.0.0"
+
+    port: "80"
+
+  log-dir: "${global.install-dir}/log"
