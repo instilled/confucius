@@ -3,6 +3,7 @@
     confucius.ext.all
   (:require
    [confucius.ext.json]
-   [confucius.ext.yaml]))
+   [confucius.ext.yaml]
+   [confucius.ext.edn]))
 
 ;; tagging
