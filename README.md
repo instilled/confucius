@@ -14,7 +14,7 @@ Applications that require configuration should read the values from the
 environment they live in (see [12factor][12factor]). Unfortunately this may
 clutter the application with `(Sytem/getenv)` calls that return un-typed data.
 Having all the configuration related data in one handy map that can read properties
-from the environment and provide sensible default values wherever possible should 
+from the environment and provide sensible default values wherever possible should
 be the the way to go. This makes it easy to add configuration to version control too!
 
 `confucius` aims at solving exactly these problems. It builds on some of the
@@ -127,6 +127,11 @@ TODO
 
 Submit bug reports/patches etc through the GitHub repository
 in the usual way. Cheers!
+
+# Contributors
+
+* Fabio Bernasconi (initial design)
+* Cedric Roussel (edn support)
 
 # License
 
