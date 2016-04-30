@@ -1,6 +1,6 @@
 (ns ^{:author "Fabio Bernasconi"
       :doc "Tools for working with configuration maps."}
-    confucius.proto
+  confucius.proto
   (:refer-clojure :exclude [load]))
 
 (defprotocol ValueReader
@@ -11,7 +11,7 @@
 
 (defmulti from-url
   "Load data from url. Dispatch on the extension
-  of url."
+   of url."
   (fn [^java.net.URL url]
     (if-let [^String f (str url)]
       (let [i (.lastIndexOf f ".")]

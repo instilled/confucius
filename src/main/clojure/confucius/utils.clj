@@ -1,12 +1,12 @@
 (ns ^{:author "Fabio Bernasconi"
       :doc "Tools for working with configuration maps."}
-    confucius.utils
+  confucius.utils
   (:import
-   [java.util.LinkedHashMap]))
+    [java.util.LinkedHashMap]))
 
 (defn walkx
   "Custom `clojure.walk/walk`. We also turn java.util.Collection
-  classes, e.g. LinkedHashMap, List, into clojure data structures."
+   classes, e.g. LinkedHashMap, List, into clojure data structures."
   [inner outer form]
   (cond
     (list? form) (outer (apply list (map inner form)))
@@ -31,9 +31,9 @@
 
 (defn deep-merge
   "Recursively merges maps. If vals are not maps,
-  the last value wins.
+   the last value wins.
 
-  Shamelessly copied from: https://groups.google.com/forum/#!topic/clojure/UdFLYjLvNRs"
+   Shamelessly copied from: https://groups.google.com/forum/#!topic/clojure/UdFLYjLvNRs"
   [& vals]
   (if (every? map? vals)
     (apply merge-with deep-merge vals)
@@ -41,7 +41,7 @@
 
 (defn unprefix
   "Unprefix `prefix` from `value`. Return `nil` if
-  `value` does not match `prefix`."
+   `value` does not match `prefix`."
   [^String value prefix]
   (when (and (string? value)
              (.startsWith value prefix))

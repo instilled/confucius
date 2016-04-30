@@ -1,10 +1,10 @@
 (ns ^{:author "Fabio Bernasconi"
       :doc "Tools for working with configuration maps."}
-    confucius.source.json
+  confucius.source.json
   (:require
-   [confucius.proto   :refer [from-url]]
-   [clojure.data.json :as    json]
-   [clojure.java.io   :as    io]))
+    [confucius.proto   :refer [from-url]]
+    [clojure.data.json :as    json]
+    [clojure.java.io   :as    io]))
 
 (defmethod from-url ".json"
   [url]

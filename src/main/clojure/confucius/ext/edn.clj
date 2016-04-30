@@ -1,9 +1,9 @@
 (ns ^{:author "Fabio Bernasconi"
       :doc "Tools for working with configuration maps."}
-    confucius.source.edn
+  confucius.source.edn
   (:require
-   [confucius.proto   :refer [from-url]]
-   [clojure.java.io   :as    io]))
+    [confucius.proto   :refer [from-url]]
+    [clojure.java.io   :as    io]))
 
 (defmethod from-url ".edn"
   [url]

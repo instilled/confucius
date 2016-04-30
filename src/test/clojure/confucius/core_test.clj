@@ -11,11 +11,11 @@
     (System/setProperty "path" "from properties")
     (is (= "from context"
            (envify
-            [{:path "from context"}]
-            "${path}")))
+             [{:path "from context"}]
+             "${path}")))
     (is (= "from properties"
            (envify
-            [{}]
+             [{}]
              "${path}")))
     (System/clearProperty "path")
     (let [n (envify [{}] "${path}")]
@@ -26,20 +26,20 @@
   (testing "recursive lookups"
     (is (= "root -> node -> leaf"
            (envify
-            [{:root "root"
-              :node "${root} -> node"}]
+             [{:root "root"
+               :node "${root} -> node"}]
              "${node} -> leaf"))))
 
   (testing "not found cases"
     (is (= "defaulted"
            (envify
-            [{}]
+             [{}]
              "${abc:defaulted}")))
     (is (thrown-with-msg?
           IllegalStateException
           #"Reference not found.*"
           (envify
-           [{}]
+            [{}]
             "${abc}")))))
 
 (deftest test-from-url

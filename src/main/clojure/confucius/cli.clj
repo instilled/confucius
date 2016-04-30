@@ -38,12 +38,12 @@
   (require '[clojure.tools.cli :refer [parse-opts]])
 
   (c/load-config
-   ["/tmp/host.edn"])
+    ["/tmp/host.edn"])
 
   ;; or with parse opts
   (defn -main [& args]
     (let [opts (parse-opts (conj my-opts cli/cli-opts))]
       (c/load-config
-       (concat
-        ["/tmp/host.edn"]
-        (cli/from-parse-opts opts))))))
+        (concat
+          ["/tmp/host.edn"]
+          (cli/from-parse-opts opts))))))
