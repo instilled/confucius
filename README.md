@@ -2,8 +2,6 @@
 
 A Clojure library for composable and declarative configuration.
 
-*NOTE* This is pre-alpha software. Expect bugs and frequent api changes!
-
 Suggestions on api, bugfixes, feature request, etc are all very welcome!
 
 [![Clojars Project](https://img.shields.io/clojars/v/confucius.svg)](https://clojars.org/confucius)
@@ -101,12 +99,23 @@ command line argument parsing.
 
 # Documentation
 
-TODO
+TBD
 
+## Loading
+
+TBD
+
+## Composing
+
+TBD
+
+## Validation & Coercion
+
+TBD
 
 ## Extending
 
-TODO
+TBD
 
 `confucius.proto/ValueReader`
 
@@ -117,8 +126,6 @@ TODO
 # TODO
 
 * support printing of configuration map
-* integration with `tools.cli`? -> overwriting on the command line
-* example integration with ``prismatic/schema`
 * warn/log when config properties are being overwritten by
   other files. use metadata to show where the value came from?
 
