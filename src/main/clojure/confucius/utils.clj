@@ -14,6 +14,7 @@
     (seq? form) (outer (doall (map inner form)))
     (instance? clojure.lang.IRecord form) (outer (reduce (fn [r x] (conj r (inner x))) form form))
     (instance? java.util.LinkedHashMap form) (outer (into {} (map inner (into {} form))))
+    (instance? java.util.ArrayList form) (outer (into [] (map inner form)))
     (instance? java.util.List form) (outer (into '() (map inner (into '() form))))
     (coll? form) (outer (into (empty form) (map inner form)))
     :else (outer form)))
