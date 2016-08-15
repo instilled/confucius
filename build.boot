@@ -78,7 +78,7 @@
   ;; into :resources-paths. see https://github.com/boot-clj/boot/wiki/Boot-Environment#env-keys
   (merge-env!
     :resource-paths
-    #{"src/main/cloujure"})
+    #{"src/main/clojure"})
   (comp
     (remove-ignored)
     (pom)
