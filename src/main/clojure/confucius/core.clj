@@ -21,7 +21,7 @@
 
 (defn ^:private extract-vars
   [s]
-  (re-seq #"\$\{.*\}" s))
+  (re-seq #"\$\{.*?\}" s))
 
 (declare envify)
 
