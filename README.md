@@ -6,9 +6,10 @@ Suggestions on api, bugfixes, feature request, etc are all very welcome!
 
 [![Clojars Project](https://img.shields.io/clojars/v/confucius.svg)](https://clojars.org/confucius)
 
+
 # Rationale
 
-Applications that require configuration should read the values from the
+Applications that require configuration should read values from the
 environment they live in (see [12factor][12factor]). Unfortunately this may
 clutter the application with `(Sytem/getenv)` calls that return un-typed data.
 Having all the configuration related data in one handy map that can read properties
@@ -20,11 +21,15 @@ ideas from other libraries such as [immuconf][immuconf] (composability),
 [nomad][nomad], or [environ][environ].
 
 
+# Is it used in production?
+
+YES! It's been used in production since late 2015!
+
+
 # Quick Start
 
-The configuration files (`awesome-service.yml`, `host.edn`, `subsys.json`)
-used in the example are listed below the code snippet. The following clojure
-code shows briefly outlines usage.
+The code below show how to use confucius. The files `awesome-service.yml`,
+`host.edn`, `subsys.json` follow the example.
 
 ```clojure
 (ns my.amazing.ns
@@ -77,7 +82,11 @@ subsys: "@:file://./subsys.json"
 # Reference (in that order) either
 # another value in the configuration,
 # a java system property or the native
-# enrivonment
+# enrivonment. Uses `get-in` split at
+# `.` to resolve value within the configuration
+# map, the value as is for java system
+# properties and uppercaseing with `. -> _`
+# replacement for native env lookups.
 audit-log: "${log-dir}/service/audit"
 ```
 
@@ -97,23 +106,28 @@ More to come... for an extensive example see the test ns
 See `confucius.cli` for an example how to integrate
 command line argument parsing.
 
+
 # Documentation
 
 TBD
+
 
 ## Loading
 
 TBD
 
+
 ## Composing
 
 TBD
+
 
 ## Validation & Coercion
 
 TBD
 
 ## Extending
+
 
 TBD
 
@@ -122,6 +136,7 @@ TBD
 `confucius.proto/ConfigSource`
 
 `confucius.proto/from-url`
+
 
 # TODO
 
@@ -135,10 +150,12 @@ TBD
 Submit bug reports/patches etc through the GitHub repository
 in the usual way. Cheers!
 
+
 # Contributors
 
 * Fabio Bernasconi (initial design)
 * Cedric Roussel (edn support)
+
 
 # License
 

@@ -3,7 +3,7 @@
        'confucius/confucius
 
        :version
-       "0.0.3-SNAPSHOT"
+       "0.0.3"
 
        :description
        "A library for declarative configuration."
